@@ -1,0 +1,258 @@
+#Ambrose Hundal
+#CE 12
+#Lab5.asm
+#Vignere-Cipher
+#11/26/17
+
+.text
+
+
+main:
+
+
+jal keylength                # function to find length of key
+jal textlength               # function to find length of cleartext
+
+#Store input key from program argument into declared array 'key'
+storekey:
+la    $t1, key              #load address of array 'key' in $t1
+la    $t2, 0($a1)           #load address at 0($a1), which holds the memory address that holds the address of key
+lw    $t2, ($t2)            #load contents of $t2, which now holds the address of first char in the array
+
+addi $t4, $zero, 0          #initialize loop counter to 0 ($t4 acts as 'i' to loop through the ciphertext, cleartext and key arrays)
+
+keyloop:                   
+                          
+#While(key[i] < length of key  ($s7 = length of key)
+
+bge  $t4, $s7, inputkey     #if loop counter reaches end of length of key, terminate the loop
+nop   
+lb    $t3, ($t2)            #load first byte of key in $t3
+sb    $t3, 0($t1)           #store first byte of key in first byte address of $t1, which is the first address of the declared array 'key'
+addi $t1, $t1, 1            #increment the pointer where next byte of input key is going to be stored in the array 'key' in the data segment
+addi $t4, $t4, 1            #increment loop counter (for eg. i++)
+addi  $t2, $t2, 1           #increment the pointer in $t2 to point to the next byte of input key
+j     keyloop               #loop back to the top, keep repeating until loop counter reaches end of keylength
+
+
+inputkey:
+la $a0, keyinput            #print prompt to ask for key
+li $v0, 4
+syscall
+
+
+printkey:        
+la   $a0, key               #load the address of key array from the data segment to print
+li   $v0, 4
+syscall
+
+
+
+la $a0, newline             #print newline
+li $v0, 4
+syscall
+
+
+
+
+#Store input text into declared array 'inputtext'
+ storetext:
+la    $t0, inputtext        #load address of inputtext in $t0 
+la    $t7, 4($a1)           #load address at 4($a1), which holds the memory address that holds the address of first byte of cleartext
+lw    $t7, ($t7)            #load contents of $t7, which now holds first byte address of cleartext from the program argument
+
+addi $t4, $zero, 0          #initialize loop counter to 0
+
+textloop:                   #loop to store user input key into array
+                    
+#While( i < text.length) $s6 = length of cleartext
+bge  $t4, $s6, cleartextprompt  #if counter reaches cleartext length, end the loop
+nop   
+lb    $t8, ($t7)            #load first byte address into $t8
+sb    $t8, 0($t0)           #store the char in the first address in $t0, which is the first address of the declared array 'inputtext'
+add $t0, $t0, 1             #increment the pointer to the next address where the next character will be stored
+addi $t4, $t4, 1            #increment loop counter
+addi  $t7, $t7, 1           #increment the pointer to point to the next address of character of cleartext
+
+j textloop                  #loop back to the top, repeat till reaches end of loop 
+
+
+
+
+cleartextprompt:
+la $a0, cleartext           #print prompt to ask for cleartext
+li $v0, 4
+syscall
+
+
+printtext:
+la $a0, inputtext          #print the array 'inputtext' 
+li $v0, 4
+syscall
+
+la $a0, newline            #print newline
+li $v0, 4
+syscall
+
+
+
+la  $s2, ciphertext        #load address of ciphertext array in $s2
+la  $s3, decrypted         #load address of decrypted array in $s3
+
+addi $t4, $zero, 0         #initialize loop counter (in Java, this translates to i = 0 )
+addi $t2, $zero, 0         #intialize $t2 to 0
+addi $t3, $zero, 0         #intialize $t3 to 0
+addi $t1, $zero, 0         #intialize $t1 to 0
+addi $t0, $zero, 0         #intialize $t0 to 0
+addi $t5, $zero, 0         #intialize $t5 to 0
+addi $t6, $zero, 0         #intialize $t6 to 0  ($t6 = i % length of key)
+
+
+#void encode(char * key, char *cleartext, char *ciphertext)
+encode:
+la  $t2, key               #load address of key in $t2
+la  $t3, inputtext         #load address of inputtext in $t3
+
+encodeloop:
+beq $t4, $s6, encryptprompt  #loop will run till end of cleartext length
+
+lb  $t0, 0($t2)            #load first byte of key in $t0
+lb  $t5, 0($t3)            #load first byte of inputtext in $t5
+add $t1, $t0, $t5          #add the values at the current byte address of key and inputtext, and store in $t1
+remu $t1, $t1, 128         #mod the value in $t1 with 128 to keep it in the ASCII table
+sb  $t1, 0($s2)            #store the value in $t1 in the first byte address in $s2, which is the address of first byte of ciphertext
+add $t3, $t3, 1            #increment pointer to next byte address in $t3
+sub $t2, $t2, $t6          #subtract $t6 from $t2 in order to reset the current byte address in $t2 to the first byte address of key
+addi $t6, $zero, 0         #reset the index of key[i] by resetting $t6
+add $t4, $t4, 1            #increment loop counter
+remu $t6, $t4, $s7         #here we calculate what ( i % length of key is ) to find out which byte in key should be used for cleartext[i] 
+add $s2, $s2, 1            #increment pointer to next byte address where the next ciphertext character will be stored
+add $t2, $t2, $t6          #increment base address of key with the corresponding index to the cleartext
+j encodeloop
+
+
+
+encryptprompt:
+la $a0, encryptedtext      #print prompt for encrypted text
+li $v0, 4
+syscall
+
+
+printcipher:               #print ciphertext
+sb $zero, 0($s2)           #put null as last character in ciphertext
+la $a0, ciphertext
+li $v0, 4
+syscall
+
+la $a0, newline            
+li $v0, 4
+syscall
+
+
+#void decode(char *key, char *ciphertext, char *cleartext){
+
+addi $t4, $zero, 0          #initialize loop counter
+addi $t2, $zero, 0          #intialize $t2 to 0
+addi $t3, $zero, 0          #intialize $t3 to 0
+addi $t1, $zero, 0          #intialize $t1 to 0
+addi $t0, $zero, 0          #intialize $t0 to 0
+addi $t5, $zero, 0          #intialize $t5 to 0
+addi $t6, $zero, 0          #intialize $t6 to 0
+
+decode:
+la  $t2, key                #load address of key array in $t2
+la  $t3, ciphertext         #load address of ciphertext in $t3
+
+decodeloop:
+beq $t4, $s6, decodeprompt  
+
+lb  $t0, 0($t2)             #load first char of key in $t0
+lb  $t5, 0($t3)             #load first char of ciphertext in $t5
+sub $t1, $t5, $t0           #subtract ascii value of key from ciphertext to get the value of cleartext at that specific byte address
+remu $t1, $t1, 128          #mod result by 128 to kep it in ASCII table values
+sb  $t1, 0($s3)             #store the byte in first address of decrypted array
+add $t3, $t3, 1             #increment to next pointer of byte address of ciphertext array
+sub $t2, $t2, $t6           #subtract $t6 from $t2 in order to reset the current byte address in $t2 to the first byte address of key
+addi $t6, $zero, 0          #reset key loop counter (reset 'i')
+add $t4, $t4, 1             #increment loop counter
+remu $t6, $t4, $s7          #here we calculate what ( i % length of key) is
+add $s3, $s3, 1             #increment to point to next address in decrypted array/$s3
+add $t2, $t2, $t6           #increment base address
+j decodeloop
+
+
+
+decodeprompt:
+la $a0, decryptedtext       #prompt to ask for decryptedtext
+li $v0, 4                  
+syscall
+
+
+printdecode:
+sb $zero, 0($s3)            #add null character at end of array
+la $a0, decrypted
+li $v0, 4
+syscall
+
+
+
+
+endcipher:
+li $v0, 10
+syscall
+
+
+
+keylength:
+li $s7, 0                   #initialize length count of key
+move $s0, $a1               
+lw   $s0, ($s0)             #load contents into $s0
+keylengthloop:
+lb $t5, 0($s0)              #load first char into $t5
+beqz $t5, endkeyloop        #check for null character
+nop
+add $s0, $s0, 1             #increment the pointer in key
+add $s7, $s7, 1             #increment the counter for counting keylength
+j keylengthloop 
+endkeyloop:
+jr $ra
+
+
+
+
+textlength:
+li $s6, 0                   #initialize length count of cleartext]
+addi $a1, $a1, 4            #increase offset to access cleartext/second element of $a1
+move $s1, $a1
+lw   $s1, ($s1)             #load contents into $s1
+textlengthloop:
+lb $s4, 0($s1)              #load first char into $s4
+beqz $s4, endloop           #check for null character
+nop
+add $s1, $s1, 1             #increment the pointer in cleartext
+add $s6, $s6, 1             #increment the counter of textlength
+j textlengthloop 
+endloop:
+addi $a1, $a1, -4           #decrease offset to get back to the first element of $a1
+jr $ra
+
+
+
+
+
+
+
+
+
+#Declared strings and arrays 
+
+.data
+key:        .space 101   #declared array for key
+inputtext:  .space 101   #declared array for cleartext
+ciphertext: .space 101   #declared array for ciphertext
+decrypted:  .space 101   #declared array for decrypted text
+keyinput:   .asciiz      "The given key is: "
+cleartext:  .asciiz      "The given text is: "
+encryptedtext: .asciiz   "The encrypted text is: "
+decryptedtext: .asciiz   "The decrypted text is: "
+newline: .asciiz         "\n"
