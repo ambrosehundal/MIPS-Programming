@@ -1,0 +1,108 @@
+#Ambrose Hundal
+#Lab4 Prime Finder 
+#CE 12 Fall 2017
+#Max Dunne
+#TA - Cory Ibanez
+#11/12/17
+
+.text
+
+main:
+
+ li $t0, 2   #start of outer loop number
+ li $t1, 2   #start of inner loop number/divisor number
+ 
+ 
+ 
+ #Greet message
+ la $a0, input    #asks user to enter a number    
+ li $v0, 4
+ syscall
+ 
+ la $a0, newline  #print a newline
+ li $v0, 4
+ syscall
+ 
+ #ask for user input
+ li $v0, 5
+ syscall
+ 
+ #move input integer into $s1
+ move $s1, $v0
+ 
+ 
+ 
+ #start of loop to determine if number is prime
+primeloop:
+#outer loop
+ bgt  $t0, $s1, endprime  #after number n (input number) has been reached, end the loop
+ nop   
+#inner loop 
+ beq  $t1, $t0, printprime #keep running the code while divisor($t1) is less than input number, and once it reaches end , go to print prime
+ nop
+ #code starts here
+ rem  $t2, $t0, $t1  #divide the current number in the loop from divisor
+ beqz $t2, notprime  #if number is divisible and remainder is 0, it is not prime and we branch to notprime and increment in order to go on to next number
+ b checkprime 	     #if remainder is not 0, branch to checkprime in order to increment to next divisor
+ nop
+ 
+notprime:
+ addi, $t0, $t0, 1  #increment the number in outerloop
+ and   $t1, $t1, 0   #reset the inner loop to 2
+ li    $t1, 2       
+ b primeloop       #once $t0 is incremented and divisor set reset to 2, branch back to the loop
+ nop
+
+ 
+checkprime:
+ addi, $t1, $t1, 1 #increment inner loop number
+ b primeloop       #branch back to the main loop
+ nop 
+ 
+ 
+printprime:
+
+ beqz  $s7, first #to not have last number with a comma, print comma first and set a flag
+ nop
+
+ la   $a0, comma  #print comma
+ li   $v0, 4
+ syscall
+
+ la   $a0, space  #print space between the prime numbers
+ li   $v0, 4
+ syscall
+
+
+ move $a0, $t0   #print the prime number
+ li   $v0, 1
+ syscall
+
+ addi  $t0, $t0, 1   #increment outer loop number
+ and   $t1, $t1, 0   #reset the divisor to 2 
+ li    $t1, 2
+ b primeloop
+ nop  
+  
+first:
+
+ move $a0, $t0   #print the prime number
+ li   $v0, 1
+ syscall
+
+ li   $s7, 1     #print comma first, and then the number. For the first case I set a flag so I can only print the number for the first number,and not a comma before it.
+ addi $t0, $t0, 1  #increment the number in the loop
+ b    primeloop
+ nop
+
+endprime:
+ 
+ li $v0, 10   #end the program
+ syscall
+
+.data
+
+input: .asciiz "Enter input: "
+newline: .asciiz "\n"
+comma: .asciiz ","
+space: .asciiz " "
